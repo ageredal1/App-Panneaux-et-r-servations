@@ -7,6 +7,18 @@ from openpyxl.styles import Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
 import math
 
+# ----------------------------
+# Interface Streamlit
+# ----------------------------
+st.set_page_config(page_title="Vérification des panneaux et réservations")
+
+st.title("✅ Vérification des panneaux et calcul du renfort des réservations")
+st.write("Téléchargez vos fichiers Excel et cliquez sur 'Lancer le calcul'")
+
+# Charger fichiers Excel
+file_panneaux = st.file_uploader("Choisir le fichier Panneaux.xlsx", type=["xlsx"])
+file_reservations = st.file_uploader("Choisir le fichier Reservations_avec_altimetrie.xlsx", type=["xlsx"])
+
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # PANNEAUX
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -626,53 +638,27 @@ def exporter_reservations(reservations, nom_fichier="Renfort_reservations_avec_a
     wb.save(nom_fichier)
     print(f"✅ Exportation réussie : {nom_fichier} avec {len(reservations)} feuilles.")
 
-# ----------------------------
-# Interface Streamlit
-# ----------------------------
-st.set_page_config(page_title="Vérification des panneaux et réservations")
-
-st.title("✅ Vérification des panneaux et calcul du renfort des réservations")
-st.write("Téléchargez vos fichiers Excel et cliquez sur 'Lancer le calcul'")
-
-# Charger fichiers Excel
-file_panneaux = st.file_uploader("📁 Panneaux.xlsx", type=["xlsx"])
-file_reservations = st.file_uploader("📁 Reservations_avec_altimetrie.xlsx", type=["xlsx"])
-
+# --------------------------
+# Execution
+# --------------------------
 if file_panneaux and file_reservations:
     if st.button("Lancer le calcul"):
-
-        # Lire fichiers Excel
-        st.info("📥 Lecture des fichiers...")
         reservoirs = donnees_Reservoirs(file_panneaux)
         sections_voile = principal_panneaux(reservoirs, file_panneaux)
+        reservations = lire_Excel_reservations(file_reservations)
+        reservations_result = principal_reservations(reservations, sections_voile, reservoirs)
 
-        Reservations = lire_Excel_reservations(file_reservations)
-        principal_reservations(Reservations, sections_voile, reservoirs)
+        # Télécharger le fichier
+        output = BytesIO()
+        exporter_reservations(reservations_result, nom_fichier=output)
+        output.seek(0)
 
-        # ----------------------------
-        # Préparer fichiers Excel pour téléchargement
-        # ----------------------------
-        st.success("✅ Calcul terminé ! Téléchargez vos résultats ci-dessous.")
-
-        # 1. Verification_panneaux_resultats_.xlsx
-        with BytesIO() as buffer_panneaux:
-            # Votre fonction exporter_resultats_panneaux_excel adaptée pour BytesIO
-            exporter_resultats_panneaux_excel(file_panneaux, reservoirs, sections_voile, sections_voile, output_buffer=buffer_panneaux)
-            buffer_panneaux.seek(0)
-            st.download_button(
-                label="📥 Télécharger Verification_panneaux_resultats_.xlsx",
-                data=buffer_panneaux,
-                file_name="Verification_panneaux_resultats_.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-        # 2. Renfort_reservations_avec_altimetrie.xlsx
-        with BytesIO() as buffer_reservations:
-            exporter_reservations(Reservations, nom_fichier=buffer_reservations)
-            buffer_reservations.seek(0)
-            st.download_button(
-                label="📥 Télécharger Renfort_reservations_avec_altimetrie.xlsx",
-                data=buffer_reservations,
-                file_name="Renfort_reservations_avec_altimetrie.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+        st.success("✅ Calcul terminé !")
+        st.download_button(
+            label="Télécharger le rapport des réservations",
+            data=output,
+            file_name="Renfort_reservations_avec_altimetrie.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+else:
+    st.info("Veuillez uploader les deux fichiers Excel pour lancer le calcul.")
