@@ -34,7 +34,7 @@ def principal_panneaux(reservoirs, fichier_excel):
         voile=associer_levees_svoile(r["levees"],r["s_voile"])
 
         # Ouvrir l'archive excel avec l'information des panneaux
-        df = pd.read_excel("panneaux.xlsx", sheet_name=i+4)     # lecture de toutes les page à partir de la page indice 4
+        df = pd.read_excel(fichier_excel, sheet_name=i+4)     # lecture de toutes les page à partir de la page indice 4
 
         # caracteristiques des panenaux
         panneaux = df.to_dict(orient="records")     #dataframe à liste de dictionnaires
